@@ -2,8 +2,8 @@ import logging
 from random import choice
 
 from emoji import emojize
-from telegram import Update
-from telegram.ext import Updater, CallbackContext, CommandHandler, MessageHandler, Filters
+from telegram import ReplyKeyboardMarkup, Update
+from telegram.ext import Updater, CallbackContext, CommandHandler, MessageHandler, Filters, RegexHandler
 
 from settings import PROXY, TOKEN, USER_EMOJI
 
@@ -19,7 +19,8 @@ def greet_user(update: Update, context: CallbackContext):
     emo = get_user_emo(context.user_data)
     text = f'Привет!{emo}'
     logging.info(text)
-    update.message.reply_text(text)
+    my_keyboard = ReplyKeyboardMarkup([['Прислать котика', 'Сменить смайлик']])
+    update.message.reply_text(text, reply_markup=my_keyboard)
 
 
 def send_pic(update: Update, context: CallbackContext):
@@ -48,6 +49,13 @@ def get_user_emo(user_data):
         return user_data['emo']
 
 
+def change_user_emo(update: Update, context: CallbackContext):
+    if 'emo' in context.user_data:
+        del context.user_data['emo']
+    emo = get_user_emo(context.user_data)
+    update.message.reply_text(f'У вас новый смайлик - {emo}')
+
+
 def main():
     mybot = Updater(TOKEN, request_kwargs=PROXY, use_context=True)
 
@@ -56,6 +64,10 @@ def main():
     dp = mybot.dispatcher
     dp.add_handler(CommandHandler('start', greet_user))
     dp.add_handler(CommandHandler('pic', send_pic))
+
+    # dp.add_handler(RegexHandler('^(Прислать котика)$', send_pic))
+    dp.add_handler(MessageHandler(Filters.regex('^(Прислать котика)$'), send_pic))
+    dp.add_handler(MessageHandler(Filters.regex('^(Сменить смайлик)$'), change_user_emo))
 
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
 
