@@ -1,4 +1,4 @@
-#Example of use package "python-telegram-bot"
+# Example of use package "python-telegram-bot"
 
 
 ### Installation
