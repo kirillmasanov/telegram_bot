@@ -1,15 +1,8 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import logging
+from telegram import Update
+from telegram.ext import CallbackContext
 
-from handlers import *
-from settings import *
-
-log = logging.getLogger()
-log.setLevel(logging.INFO)
-# handler = logging.FileHandler('bot.log', 'w', 'utf-8')
-handler = logging.StreamHandler()
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-log.addHandler(handler)
+from utils import get_keyboard, get_user_emo
 
 
 def greet_user(update: Update, context: CallbackContext):
@@ -49,28 +42,3 @@ def change_user_emo(update: Update, context: CallbackContext):
         del context.user_data['emo']
     emo = get_user_emo(context.user_data)
     update.message.reply_text(f'У вас новый смайлик - {emo}', reply_markup=get_keyboard())
-
-
-def main():
-    mybot = Updater(TOKEN, request_kwargs=PROXY, use_context=True)
-
-    logging.info('Бот запускается')
-
-    dp = mybot.dispatcher
-    dp.add_handler(CommandHandler('start', greet_user))
-    dp.add_handler(CommandHandler('pic', send_pic))
-
-    dp.add_handler(MessageHandler(Filters.regex('^(Прислать котика)$'), send_pic))
-    dp.add_handler(MessageHandler(Filters.regex('^(Сменить смайлик)$'), change_user_emo))
-
-    dp.add_handler(MessageHandler(Filters.contact, get_contact))
-    dp.add_handler(MessageHandler(Filters.location, get_location))
-
-    dp.add_handler(MessageHandler(Filters.text, talk_to_me))
-
-    mybot.start_polling()
-    mybot.idle()
-
-
-if __name__ == '__main__':
-    main()
