@@ -1,8 +1,8 @@
 import logging
-from telegram import Update
-from telegram.ext import CallbackContext
+from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, ParseMode
+from telegram.ext import CallbackContext, ConversationHandler
 
-from utils import get_keyboard, get_user_emo
+from utils import get_keyboard, get_user_emo, pic_info
 
 
 def greet_user(update: Update, context: CallbackContext):
@@ -42,3 +42,74 @@ def change_user_emo(update: Update, context: CallbackContext):
         del context.user_data['emo']
     emo = get_user_emo(context.user_data)
     update.message.reply_text(f'У вас новый смайлик - {emo}', reply_markup=get_keyboard())
+
+
+def describe_photo(update: Update, context: CallbackContext):
+    update.message.reply_text(f'Обрабатываем фото..')
+    photo_file = context.bot.getFile(update.message.photo[-1].file_id)
+    photo_path = photo_file['file_path']
+    update.message.reply_text(f'Ключевые слова: {", ".join(pic_info(photo_path))}')
+
+
+def anketa_start(update: Update, context: CallbackContext):
+    update.message.reply_text(f'Как Вас зовут? Напишите имя и фамилию', reply_markup=ReplyKeyboardRemove())
+    return 'name'
+
+
+def anketa_get_name(update: Update, context: CallbackContext):
+    user_name = update.message.text
+    if len(user_name.split(' ')) != 2:
+        update.message.reply_text('Ошибка! Попробуйте еще раз!')
+        return 'name'
+    else:
+        context.user_data['anketa_name'] = user_name
+        reply_keyboard = [['1', '2', '3', '4', '5']]
+
+        update.message.reply_text(
+            'Оцените нашего бота от 1 до 5',
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+        )
+        return 'rating'
+
+
+def anketa_rating(update: Update, context: CallbackContext):
+    context.user_data['anketa_rating'] = update.message.text
+    update.message.reply_text('''Пожалуйста, напишите нам отзыв в свободной форме 
+или /skip, чтобы пропустить этот шаг''')
+    return 'comment'
+
+
+def anketa_comment(update: Update, context: CallbackContext):
+    context.user_data['anketa_comment'] = update.message.text
+    text = """
+<b>Фамилия Имя:</b> {anketa_name}
+<b>Оценка:</b> {anketa_rating}
+<b>Комментарий:</b> {anketa_comment}""".format(**context.user_data)
+    update.message.reply_text(text, reply_murkup=get_keyboard(), parse_mode=ParseMode.HTML)
+    return ConversationHandler.END
+
+
+def anketa_skip_comment(update: Update, context: CallbackContext):
+    text = """
+<b>Фамилия Имя:</b> {anketa_name}
+<b>Оценка:</b> {anketa_rating}""".format(**context.user_data)
+    update.message.reply_text(text, reply_murkup=get_keyboard(), parse_mode=ParseMode.HTML)
+    return ConversationHandler.END
+
+
+def dontknow(update: Update, context: CallbackContext):
+    update.message.reply_text('Не понимаю!')
+
+
+def caps(update, context):
+    text_caps = ' '.join(context.args).upper()
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text_caps)
+
+
+def userinfo(update, context):
+    user_name = update.message.chat.username
+    chat_id = update.message.chat.id
+    first_name = update.message.chat.first_name
+    last_name = update.message.chat.last_name
+    # print(f'{update.message}')
+    update.message.reply_text(f'@{user_name}\nid: {chat_id}\nFirst: {first_name}\nLast: {last_name}')

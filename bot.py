@@ -12,43 +12,15 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 
 
-def greet_user(update: Update, context: CallbackContext):
-    emo = get_user_emo(context.user_data)
-    text = f'Привет!{emo}'
-    logging.info(text)
-    update.message.reply_text(text, reply_markup=get_keyboard())
-
-
-def send_pic(update: Update, context: CallbackContext):
-    context.bot.send_photo(chat_id=update.message.chat_id,
-                           photo='https://i.pinimg.com/736x/c7/12/43/c712434d2bf453f77513c0de26d3b4d1.jpg',
-                           reply_markup=get_keyboard()
-                           )
-
-
-def talk_to_me(update: Update, context: CallbackContext):
-    emo = get_user_emo(context.user_data)
-    user_text = f'Привет, {update.message.chat.first_name}! Ты написал: {update.message.text}{emo}'
-    logging.info(f'User: {update.message.chat.username}, Chat_id: {update.message.chat_id}, '
-                 f'Message: {update.message.text}')
-    update.message.reply_text(user_text, reply_markup=get_keyboard())
-
-
-def get_contact(update: Update, context: CallbackContext):
-    print(update.message.contact)
-    update.message.reply_text(f'Готово: {get_user_emo(context.user_data)}', reply_markup=get_keyboard())
-
-
-def get_location(update: Update, context: CallbackContext):
-    print(update.message.location)
-    update.message.reply_text(f'Готово: {get_user_emo(context.user_data)}', reply_markup=get_keyboard())
-
-
-def change_user_emo(update: Update, context: CallbackContext):
-    if 'emo' in context.user_data:
-        del context.user_data['emo']
-    emo = get_user_emo(context.user_data)
-    update.message.reply_text(f'У вас новый смайлик - {emo}', reply_markup=get_keyboard())
+def my_test(context):
+    print('Тest')
+    context.bot.send_message(chat_id='409569568',
+                             text='One message every minute')
+    context.job.interval += 5
+    if context.job.interval > 15:
+        context.bot.send_message(chat_id='409569568',
+                                 text='No more spam for you!')
+        context.job.schedule_removal()
 
 
 def main():
@@ -57,15 +29,34 @@ def main():
     logging.info('Бот запускается')
 
     dp = mybot.dispatcher
-    dp.add_handler(CommandHandler('start', greet_user))
-    dp.add_handler(CommandHandler('pic', send_pic))
 
+    # mybot.job_queue.run_repeating(my_test, interval=5, first=0)
+
+    anketa = ConversationHandler(
+        entry_points=[MessageHandler(Filters.regex('^(Заполнить анкету)$'), anketa_start)],
+        states={
+            'name': [MessageHandler(Filters.text, anketa_get_name)],
+            'rating': [MessageHandler(Filters.regex('^(1|2|3|4|5)$'), anketa_rating)],
+            'comment': [CommandHandler('skip', anketa_skip_comment),
+                        MessageHandler(Filters.text, anketa_comment),
+                        ]
+        },
+        fallbacks=[MessageHandler(
+            Filters.text | Filters.video | Filters.photo | Filters.document,
+            dontknow
+        )]
+    )
+
+    dp.add_handler(CommandHandler('start', greet_user))
+    dp.add_handler(anketa)
+    dp.add_handler(CommandHandler('pic', send_pic))
+    dp.add_handler(CommandHandler('userinfo', userinfo))
+    dp.add_handler(CommandHandler('caps', caps))
     dp.add_handler(MessageHandler(Filters.regex('^(Прислать котика)$'), send_pic))
     dp.add_handler(MessageHandler(Filters.regex('^(Сменить смайлик)$'), change_user_emo))
-
     dp.add_handler(MessageHandler(Filters.contact, get_contact))
     dp.add_handler(MessageHandler(Filters.location, get_location))
-
+    dp.add_handler(MessageHandler(Filters.photo, describe_photo))
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
 
     mybot.start_polling()
