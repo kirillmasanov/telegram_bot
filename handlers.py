@@ -113,3 +113,17 @@ def userinfo(update, context):
     last_name = update.message.chat.last_name
     # print(f'{update.message}')
     update.message.reply_text(f'@{user_name}\nid: {chat_id}\nFirst: {first_name}\nLast: {last_name}')
+
+
+def set_alarm(update, context):
+    try:
+        seconds = int(context.args[0])
+        context.job_queue.run_once(alarm, seconds, context=update.message.chat_id)
+    except (IndexError, ValueError):
+        update.message.reply_text('Введите кол-во секунд после /alarm')
+    update.message.reply_text('Timer successfully set!')
+
+
+def alarm(context):
+    job = context.job
+    context.bot.send_message(job.context, text='Сработал будильник!')
