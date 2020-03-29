@@ -2,10 +2,13 @@ import logging
 from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, ParseMode
 from telegram.ext import CallbackContext, ConversationHandler
 
+from db import db, get_or_create_user
 from utils import get_keyboard, get_user_emo, pic_info
 
 
 def greet_user(update: Update, context: CallbackContext):
+    user = get_or_create_user(db, update.effective_user, update.message)
+    print(user)
     emo = get_user_emo(context.user_data)
     text = f'Привет!{emo}'
     logging.info(text)

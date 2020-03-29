@@ -13,6 +13,7 @@ log.addHandler(handler)
 
 
 def my_test(context):
+    """Testing the job"""
     print('Тest')
     context.bot.send_message(chat_id='409569568',
                              text='One message every minute')
