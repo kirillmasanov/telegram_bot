@@ -1,4 +1,5 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import messagequeue as mq
 
 from handlers import *
 from settings import *
@@ -32,6 +33,7 @@ def main():
     dp = mybot.dispatcher
 
     # mybot.job_queue.run_repeating(my_test, interval=5, first=0)
+    mybot.job_queue.run_repeating(send_updates, 5)
 
     anketa = ConversationHandler(
         entry_points=[MessageHandler(Filters.regex('^(Заполнить анкету)$'), anketa_start)],
@@ -58,6 +60,8 @@ def main():
     dp.add_handler(MessageHandler(Filters.regex('^(Сменить смайлик)$'), change_user_emo))
     dp.add_handler(MessageHandler(Filters.contact, get_contact))
     dp.add_handler(MessageHandler(Filters.location, get_location))
+    dp.add_handler(CommandHandler('subscribe', subscribe))
+    dp.add_handler(CommandHandler('unsubscribe', unsubscribe))
     dp.add_handler(MessageHandler(Filters.photo, describe_photo))
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
 

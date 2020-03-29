@@ -1,14 +1,16 @@
-import logging
-from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, ParseMode
+from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, ParseMode, error
 from telegram.ext import CallbackContext, ConversationHandler
 
-from db import db, get_or_create_user
+import logging
+
+from db import db, get_or_create_user, toggle_subscription, get_subscribers
 from utils import get_keyboard, get_user_emo, pic_info
 
 
 def greet_user(update: Update, context: CallbackContext):
     user = get_or_create_user(db, update.effective_user, update.message)
-    print(user)
+    for key, value in user.items():
+        context.user_data[key] = value
     emo = get_user_emo(context.user_data)
     text = f'Привет!{emo}'
     logging.info(text)
@@ -23,6 +25,7 @@ def send_pic(update: Update, context: CallbackContext):
 
 
 def talk_to_me(update: Update, context: CallbackContext):
+    print(context.user_data)
     emo = get_user_emo(context.user_data)
     user_text = f'Привет, {update.message.chat.first_name}! Ты написал: {update.message.text}{emo}'
     logging.info(f'User: {update.message.chat.username}, Chat_id: {update.message.chat_id}, '
@@ -130,3 +133,27 @@ def set_alarm(update, context):
 def alarm(context):
     job = context.job
     context.bot.send_message(job.context, text='Сработал будильник!')
+
+
+def subscribe(update, context):
+    user = get_or_create_user(db, update.effective_user, update.message)
+    if not user.get('subscribed'):
+        toggle_subscription(db, user)
+    update.message.reply_text('Вы подписались!')
+
+
+def send_updates(context):
+    for user in get_subscribers(db):
+        try:
+            context.bot.sendMessage(chat_id=user['chat_id'], text='BUZZZ!')
+        except error.BadRequest:
+            print(f'Chat {user["chat_id"]} not found!')
+
+
+def unsubscribe(update, context):
+    user = get_or_create_user(db, update.effective_user, update.message)
+    if user.get('subscribed'):
+        toggle_subscription(db, user)
+        update.message.reply_text('Вы отписались!')
+    else:
+        update.message.reply_text('Вы не подписаны, нажмите /subscribe , чтобы подписаться!')
