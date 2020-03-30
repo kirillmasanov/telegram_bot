@@ -1,4 +1,6 @@
-from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, ParseMode, error
+from emoji import emojize
+from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup, ParseMode, error, InlineKeyboardButton, \
+    InlineKeyboardMarkup
 from telegram.ext import CallbackContext, ConversationHandler
 
 import logging
@@ -18,9 +20,13 @@ def greet_user(update: Update, context: CallbackContext):
 
 
 def send_pic(update: Update, context: CallbackContext):
+    user = get_or_create_user(db, update.effective_user, update.message)
+    inlinekbd = [[InlineKeyboardButton(emojize(':thumbs_up:'), callback_data='cat_good'),
+                  InlineKeyboardButton(emojize(':thumbs_down:'), callback_data='cat_bad')]]
+    kbd_murkup = InlineKeyboardMarkup(inlinekbd)
     context.bot.send_photo(chat_id=update.message.chat_id,
                            photo='https://i.pinimg.com/736x/c7/12/43/c712434d2bf453f77513c0de26d3b4d1.jpg',
-                           reply_markup=get_keyboard()
+                           reply_markup=kbd_murkup
                            )
 
 
@@ -157,3 +163,13 @@ def unsubscribe(update, context):
         update.message.reply_text('Вы отписались!')
     else:
         update.message.reply_text('Вы не подписаны, нажмите /subscribe , чтобы подписаться!')
+
+
+def inline_button_pressed(update, context, *args, **kwargs):
+    query = update.callback_query
+    if query.data in ['cat_good', 'cat_bad']:
+        caption = 'Круто!' if query.data == 'cat_good' else 'Печаль :('
+        context.bot.edit_message_caption(caption=caption,
+                                         chat_id=update.callback_query.message.chat_id,
+                                         message_id=update.callback_query.message.message_id,
+                                         *args, **kwargs)

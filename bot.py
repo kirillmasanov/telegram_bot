@@ -1,5 +1,4 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from telegram.ext import messagequeue as mq
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 
 from handlers import *
 from settings import *
@@ -58,6 +57,7 @@ def main():
     dp.add_handler(CommandHandler('alarm', set_alarm, pass_args=True, pass_job_queue=True, pass_chat_data=True))
     dp.add_handler(MessageHandler(Filters.regex('^(Прислать котика)$'), send_pic))
     dp.add_handler(MessageHandler(Filters.regex('^(Сменить смайлик)$'), change_user_emo))
+    dp.add_handler(CallbackQueryHandler(inline_button_pressed))
     dp.add_handler(MessageHandler(Filters.contact, get_contact))
     dp.add_handler(MessageHandler(Filters.location, get_location))
     dp.add_handler(CommandHandler('subscribe', subscribe))
